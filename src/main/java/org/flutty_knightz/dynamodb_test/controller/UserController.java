@@ -5,7 +5,11 @@ import org.flutty_knightz.dynamodb_test.entity.User;
 import org.flutty_knightz.dynamodb_test.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import software.amazon.awssdk.core.pagination.sync.SdkIterable;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.PageIterable;
 
+import java.util.Iterator;
 import java.util.List;
 
 @RestController
@@ -25,7 +29,15 @@ public class UserController {
     // READ a User by userId and createdDate
     @GetMapping("/{userId}/{createdDate}")
     public ResponseEntity<User> getUser(@PathVariable int userId, @PathVariable String createdDate) {
-        User user = userService.getUser(userId, createdDate);
+        User user = userService.getUser(userId,
+                createdDate);
+        return user != null ? ResponseEntity.ok(user) : ResponseEntity.notFound().build();
+    }
+
+    // READ a User by userId and createdDate
+    @GetMapping("/{name}")
+    public ResponseEntity<List<User>> getUserByName(@PathVariable String name) {
+        List<User> user = userService.getUserByName(name);
         return user != null ? ResponseEntity.ok(user) : ResponseEntity.notFound().build();
     }
 
@@ -39,7 +51,8 @@ public class UserController {
     // DELETE User
     @DeleteMapping("/{userId}/{createdDate}")
     public ResponseEntity<Void> deleteUser(@PathVariable int userId, @PathVariable String createdDate) {
-        userService.deleteUser(userId, createdDate);
+        userService.deleteUser(userId,
+                createdDate);
         return ResponseEntity.ok().build();
     }
 

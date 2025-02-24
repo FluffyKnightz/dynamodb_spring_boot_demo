@@ -10,24 +10,19 @@ import java.time.LocalDate;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
 @Setter
 @DynamoDbBean
 public class Order {
-    @Getter(onMethod_ = {@DynamoDbPartitionKey})
-    @Setter
+    @Getter(onMethod_ = {@DynamoDbAttribute("order_id"), @DynamoDbPartitionKey})
     private int orderId;
 
-    @Getter(onMethod_ = {@DynamoDbSortKey, @DynamoDbSecondarySortKey(indexNames = {"order_by_created_date", "order_by_user_id"})})
-    @Setter
+    @Getter(onMethod_ = {@DynamoDbAttribute("created_date"), @DynamoDbSortKey, @DynamoDbSecondarySortKey(indexNames = "GSI_CreatedDate_Order")})
     private LocalDate createdDate;
 
-    @Getter(onMethod_ = {@DynamoDbSecondaryPartitionKey(indexNames = "order_by_user_id")})
-    @Setter
+    @Getter(onMethod_ = {@DynamoDbSecondaryPartitionKey(indexNames = "GSI_UserID_CreatedDate")})
     private int userId;
 
     @Getter(onMethod_ = {@DynamoDbAttribute("order_item")})
-    @Setter
     private String orderItem;
 
 }

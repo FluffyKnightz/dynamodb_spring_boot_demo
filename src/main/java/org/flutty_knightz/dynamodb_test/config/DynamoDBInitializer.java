@@ -10,7 +10,6 @@ public class DynamoDBInitializer {
     private final DynamoDbClient dynamoDbClient;
     private static final String USERS_TABLE = "users";
     private static final String ORDERS_TABLE = "orders";
-    private static final String GSI_NAME = "UserIDIndex";
 
     public DynamoDBInitializer(DynamoDbClient dynamoDbClient) {
         this.dynamoDbClient = dynamoDbClient;
@@ -24,16 +23,49 @@ public class DynamoDBInitializer {
 
     private void createUsersTable() {
         CreateTableRequest request = CreateTableRequest.builder()
-                .tableName(USERS_TABLE)
-                .keySchema(
-                        KeySchemaElement.builder().attributeName("user_id").keyType(KeyType.HASH).build(),
-                        KeySchemaElement.builder().attributeName("created_date").keyType(KeyType.RANGE).build())
-                .attributeDefinitions(
-                        AttributeDefinition.builder().attributeName("user_id").attributeType(ScalarAttributeType.N).build(),
-                        AttributeDefinition.builder().attributeName("created_date").attributeType(ScalarAttributeType.S).build()
-                )
-                .provisionedThroughput(ProvisionedThroughput.builder().readCapacityUnits(5L).writeCapacityUnits(5L).build())
-                .build();
+                                                       .tableName(USERS_TABLE)
+                                                       .keySchema(KeySchemaElement.builder()
+                                                                                  .attributeName("user_id")
+                                                                                  .keyType(KeyType.HASH)
+                                                                                  .build(),
+                                                               KeySchemaElement.builder()
+                                                                               .attributeName("created_date")
+                                                                               .keyType(KeyType.RANGE)
+                                                                               .build())
+                                                       .provisionedThroughput(builder -> {
+                                                           builder.writeCapacityUnits(5L);
+                                                           builder.readCapacityUnits(5L);
+                                                       })
+                                                       .attributeDefinitions(AttributeDefinition.builder()
+                                                                                                .attributeName("user_id")
+                                                                                                .attributeType(ScalarAttributeType.N)
+                                                                                                .build(),
+                                                               AttributeDefinition.builder()
+                                                                                  .attributeName("created_date")
+                                                                                  .attributeType(ScalarAttributeType.S)
+                                                                                  .build(),
+                                                               AttributeDefinition.builder()
+                                                                                  .attributeName("name")
+                                                                                  .attributeType(ScalarAttributeType.S)
+                                                                                  .build())
+                                                       .globalSecondaryIndexes(GlobalSecondaryIndex.builder()
+                                                                                                   .indexName("name_user_id_index")
+                                                                                                   .keySchema(KeySchemaElement.builder()
+                                                                                                                              .attributeName("name")
+                                                                                                                              .keyType(KeyType.HASH)
+                                                                                                                              .build(),
+                                                                                                           KeySchemaElement.builder()
+                                                                                                                           .attributeName("user_id")
+                                                                                                                           .keyType(KeyType.RANGE)
+                                                                                                                           .build())
+                                                                                                   .projection(builder -> builder.projectionType(ProjectionType.ALL))
+                                                                                                   .provisionedThroughput(builder -> {
+                                                                                                       builder.writeCapacityUnits(5L);
+                                                                                                       builder.readCapacityUnits(5L);
+                                                                                                   })
+                                                                                                   .build())
+
+                                                       .build();
         try {
             dynamoDbClient.createTable(request);
             System.out.println("Users table created successfully.");
@@ -44,22 +76,44 @@ public class DynamoDBInitializer {
 
     private void createOrdersTableWithGSI() {
         CreateTableRequest request = CreateTableRequest.builder()
-                .tableName(ORDERS_TABLE)
-                .keySchema(KeySchemaElement.builder().attributeName("order_id").keyType(KeyType.HASH).build(),
-                        KeySchemaElement.builder().attributeName("created_date").keyType(KeyType.RANGE).build())
-                .attributeDefinitions(
-                        AttributeDefinition.builder().attributeName("order_id").attributeType(ScalarAttributeType.N).build(),
-                        AttributeDefinition.builder().attributeName("user_id").attributeType(ScalarAttributeType.N).build(),
-                        AttributeDefinition.builder().attributeName("created_date").attributeType(ScalarAttributeType.S).build()
-                )
-                .globalSecondaryIndexes(GlobalSecondaryIndex.builder()
-                        .indexName(GSI_NAME)
-                        .keySchema(KeySchemaElement.builder().attributeName("user_id").keyType(KeyType.HASH).build())
-                        .projection(Projection.builder().projectionType(ProjectionType.ALL).build())
-                        .provisionedThroughput(ProvisionedThroughput.builder().readCapacityUnits(5L).writeCapacityUnits(5L).build())
-                        .build())
-                .provisionedThroughput(ProvisionedThroughput.builder().readCapacityUnits(5L).writeCapacityUnits(5L).build())
-                .build();
+                                                       .tableName(ORDERS_TABLE)
+                                                       .keySchema(KeySchemaElement.builder()
+                                                                                  .attributeName("order_id")
+                                                                                  .keyType(KeyType.HASH)
+                                                                                  .build(),
+                                                               KeySchemaElement.builder()
+                                                                               .attributeName("created_date")
+                                                                               .keyType(KeyType.RANGE)
+                                                                               .build())
+                                                       .attributeDefinitions(AttributeDefinition.builder()
+                                                                                                .attributeName("order_id")
+                                                                                                .attributeType(ScalarAttributeType.N)
+                                                                                                .build(),
+                                                               AttributeDefinition.builder()
+                                                                                  .attributeName("user_id")
+                                                                                  .attributeType(ScalarAttributeType.N)
+                                                                                  .build(),
+                                                               AttributeDefinition.builder()
+                                                                                  .attributeName("created_date")
+                                                                                  .attributeType(ScalarAttributeType.S)
+                                                                                  .build())
+                                                       .globalSecondaryIndexes(GlobalSecondaryIndex.builder()
+                                                                                                   .indexName("user_id_index")
+                                                                                                   .keySchema(KeySchemaElement.builder()
+                                                                                                                              .attributeName("user_id")
+                                                                                                                              .keyType(KeyType.HASH)
+                                                                                                                              .build())
+                                                                                                   .projection(builder -> builder.projectionType(ProjectionType.ALL))
+                                                                                                   .provisionedThroughput(builder -> {
+                                                                                                       builder.writeCapacityUnits(5L);
+                                                                                                       builder.readCapacityUnits(5L);
+                                                                                                   })
+                                                                                                   .build())
+                                                       .provisionedThroughput(builder -> {
+                                                           builder.writeCapacityUnits(5L);
+                                                           builder.readCapacityUnits(5L);
+                                                       })
+                                                       .build();
         try {
             dynamoDbClient.createTable(request);
             System.out.println("Orders table with GSI created successfully.");
