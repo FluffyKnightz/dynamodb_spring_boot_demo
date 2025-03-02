@@ -7,13 +7,9 @@ import software.amazon.awssdk.core.pagination.sync.SdkIterable;
 import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.PageIterable;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.Optional;
 
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo;
 
@@ -56,9 +52,13 @@ public class UserServiceImplement implements UserService {
     }
 
     @Override
-    public User getUser(int userId, String createdDate) {
-        Key key = Key.builder().partitionValue(userId).sortValue(createdDate).build();
-        return userTable.getItem(key);
+    public Optional<User> getUser(int userId, String createdDate) {
+//        Key key = Key.builder().partitionValue(userId).sortValue(createdDate).build();
+//        return userTable.getItem(key);
+        SdkIterable<Page<User>> user = userTable.query(builder -> builder.queryConditional(keyEqualTo(k -> k.partitionValue(userId)
+                                                                                                            .sortValue(createdDate))));
+        PageIterable<User> page = PageIterable.create(user);
+        return page.items().stream().findFirst();
     }
 
     @Override
@@ -78,14 +78,11 @@ public class UserServiceImplement implements UserService {
     }
 
     @Override
-    public List<User> getUserByName(String name) {
-        SdkIterable<Page<User>> results = userGsi.query(builder -> builder.queryConditional(keyEqualTo(k -> k.partitionValue(name))));
-
-        // Flatten the paginated results into a List<User>
-        return StreamSupport.stream(results.spliterator(), false)
-                                           .flatMap(page -> page.items().stream())
-                                           .collect(Collectors.toList());
+    public Optional<User> getUserByName(int id, String name) {
+        SdkIterable<Page<User>> results = userGsi.query(builder -> builder.queryConditional(keyEqualTo(k -> k.partitionValue(name)
+                                                                                                             .sortValue(id))));
+        PageIterable<User> page = PageIterable.create(results);
+        return page.items().stream().findFirst();
     }
-
 
 }
